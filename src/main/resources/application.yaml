@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: "jdbc:postgresql://localhost:5432/bragi"
+    username: "jason"
+    password: "jason"
+  jpa:
+    database-platform: "org.hibernate.dialect.PostgreSQLDialect"
+    generate-ddl: "true"
