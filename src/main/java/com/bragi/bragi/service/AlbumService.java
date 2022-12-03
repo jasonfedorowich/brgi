@@ -6,6 +6,7 @@ import com.bragi.bragi.model.Song;
 import com.bragi.bragi.repository.AlbumRepository;
 import com.bragi.bragi.retry.Retry;
 import com.bragi.bragi.service.config.RetryConfig;
+import com.bragi.bragi.service.utils.RetryUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,55 +24,53 @@ public class AlbumService {
     private final RetryConfig retryConfig;
 
     public Album store(Album album){
-        return getResultFromRetry(()-> albumRepository.save(album), "Starting save operation: {}",
-                "Running save operation number: {}");
+        return RetryUtils.getResultFromRetry(()-> albumRepository.save(album), "Starting save operation: {}",
+                "Running save operation number: {}", retryConfig.getMaxAttempts(),
+                retryConfig.getMaxWaitBetweenMillis(),
+                retryConfig.getMinWaitBetweenMillis());
     }
 
     public Album getById(long id){
-        return getResultFromRetry(()-> albumRepository.findById(id), "Starting get by id operation: {}",
-                "Running get id operation number: {}")
+        return RetryUtils.getResultFromRetry(()-> albumRepository.findById(id), "Starting get by id operation: {}",
+                "Running get id operation number: {}", retryConfig.getMaxAttempts(),
+                        retryConfig.getMaxWaitBetweenMillis(),
+                        retryConfig.getMinWaitBetweenMillis())
                 .orElseThrow();
     }
 
     public void deleteById(long id){
-        getResultFromRetry(()->{
+        RetryUtils.getResultFromRetry(()->{
             albumRepository.deleteById(id);
             return null;
         }, "Starting delete operation: {}",
-                "Running delete by id operation number: {}");
+                "Running delete by id operation number: {}", retryConfig.getMaxAttempts(),
+                retryConfig.getMaxWaitBetweenMillis(),
+                retryConfig.getMinWaitBetweenMillis());
     }
 
     public Set<Artist> getAllArtists(long id) {
-       return getResultFromRetry(()-> albumRepository.findById(id)
+       return RetryUtils.getResultFromRetry(()-> albumRepository.findById(id)
                .orElseThrow()
                .getArtists(), "Starting get by id operation: {}",
-               "Running get id operation number: {}");
+               "Running get id operation number: {}", retryConfig.getMaxAttempts(),
+               retryConfig.getMaxWaitBetweenMillis(),
+               retryConfig.getMinWaitBetweenMillis());
     }
 
     public Set<Song> getAllSongs(long id){
-        return getResultFromRetry(()-> albumRepository.findById(id)
+        return RetryUtils.getResultFromRetry(()-> albumRepository.findById(id)
                 .orElseThrow()
                 .getSongs(), "Starting get by id operation: {}",
-                "Running get id operation number: {}");
+                "Running get id operation number: {}", retryConfig.getMaxAttempts(),
+                retryConfig.getMaxWaitBetweenMillis(),
+                retryConfig.getMinWaitBetweenMillis());
     }
 
     public Album getAlbumByName(String name){
-        return getResultFromRetry(()-> albumRepository.findByTitle(name)
+        return RetryUtils.getResultFromRetry(()-> albumRepository.findByTitle(name)
                 .orElseThrow(), "Starting get by name operation: {}",
-                "Running get name operation number: {}");
-    }
-
-    private <R> R getResultFromRetry(Callable<R> callable, String messageBefore, String messageDuring){
-        return Retry.fromCallable(callable)
-                .setPredicate((t)-> true)
-                .setRetryAttempts(retryConfig.getMaxAttempts())
-                .setOnCompleteFunction((t)-> new RuntimeException())
-                .setMaxWait(retryConfig.getMaxWaitBetweenMillis())
-                .setMinWait(retryConfig.getMinWaitBetweenMillis())
-                .setOnBefore(retry -> log.info(messageBefore, retry.getRetryAttempts()))
-                .setOnRetry(retry -> log.info(messageDuring, retry.getAttemptNumber()))
-                .build()
-                .subscribe()
-                .getResult();
+                "Running get name operation number: {}", retryConfig.getMaxAttempts(),
+                retryConfig.getMaxWaitBetweenMillis(),
+                retryConfig.getMinWaitBetweenMillis());
     }
 }
