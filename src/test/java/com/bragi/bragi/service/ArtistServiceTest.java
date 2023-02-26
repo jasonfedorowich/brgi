@@ -3,351 +3,243 @@ package com.bragi.bragi.service;
 import com.bragi.bragi.model.Album;
 import com.bragi.bragi.model.Artist;
 import com.bragi.bragi.model.Song;
-import com.bragi.bragi.repository.ArtistRepository;
-import com.bragi.bragi.service.config.RetryConfig;
+import com.bragi.bragi.model.SongContent;
+import com.bragi.bragi.repository.DataAccessService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashSet;
-import java.util.Optional;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ArtistServiceTest {
 
+    @Mock
+    private DataAccessService dataAccessService;
+
     private ArtistService artistService;
 
-    @Mock
-    private ArtistRepository artistRepository;
-
-    @Mock
-    private RetryConfig retryConfig;
 
     @BeforeEach
     void setUp() {
-        when(retryConfig.getMaxAttempts()).thenReturn(3);
-        when(retryConfig.getMinWaitBetweenMillis()).thenReturn(100L);
-        when(retryConfig.getMaxWaitBetweenMillis()).thenReturn(200L);
+        artistService = new ArtistService(dataAccessService);
+    }
 
-        artistService = new ArtistService(artistRepository, retryConfig);
+    @AfterEach
+    void tearDown() {
     }
 
     @Test
     void when_store_success_thenReturns() {
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
+        var externalId = UUID.randomUUID();
+        when(dataAccessService.saveArtist(any()))
+                .thenReturn(Artist.builder().externalId(externalId).build());
 
-        when(artistRepository.save(any())).thenReturn(artist);
+        var artistResponse = artistService.store(brgi.grpc.AddArtistRequest.newBuilder().build());
 
-        var newArtist = artistService.store(artist);
-
-        assertEquals(artist, newArtist);
-        verify(artistRepository).save(any());
+        assertEquals(externalId.toString(), artistResponse.getArtistId());
     }
 
     @Test
-    void when_store_failsThenRetries_thenReturns() {
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
-
-        when(artistRepository.save(any()))
-                .thenThrow(new RuntimeException())
-                .thenReturn(artist);
-
-        var newArtist = artistService.store(artist);
-
-        assertEquals(artist, newArtist);
-        verify(artistRepository, times(2)).save(any());
-    }
-
-    @Test
-    void when_store_failsThenRetries_thenThrows() {
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
-
-        when(artistRepository.save(any()))
+    void when_store_fails_thenThrows(){
+        var externalId = UUID.randomUUID();
+        when(dataAccessService.saveArtist(any()))
                 .thenThrow(new RuntimeException());
 
         assertThrows(RuntimeException.class, ()->{
-            var newArtist = artistService.store(artist);
+            var artistResponse = artistService
+                    .store(brgi.grpc.AddArtistRequest.newBuilder().build());
         });
-
-        verify(artistRepository, times(3)).save(any());
     }
 
     @Test
-    void when_getById_success_thenReturns() {
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
+    void when_getArtist_success_thenReturns() {
+        var externalId = UUID.randomUUID();
+        when(dataAccessService.getArtistByExternalId(any()))
+                .thenReturn(Artist.builder()
+                        .id(1L)
+                        .name("hey world")
+                        .timeStarted(Timestamp.from(Instant.now()))
+                        .externalId(externalId)
+                        .songs(Set.of(Song.builder()
+                                .externalId(UUID.randomUUID()).build()))
+                        .build());
 
-        when(artistRepository.findById(anyLong())).thenReturn(Optional.of(artist));
+        var getArtistResponse = artistService.getArtist(brgi.grpc.GetArtistRequest.newBuilder()
+                .setArtistId(externalId.toString()).build());
 
-        var newArtist = artistService.getById(1L);
-
-        assertEquals(artist, newArtist);
-        verify(artistRepository).findById(anyLong());
-
+        assertEquals(externalId.toString(), getArtistResponse.getArtist().getArtistId());
+        assertEquals(1, getArtistResponse.getArtist().getSongIdList().size());
     }
 
     @Test
-    void when_getById_retries_thenReturns() {
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
-
-        when(artistRepository.findById(anyLong()))
-                .thenThrow(new RuntimeException())
-                .thenReturn(Optional.of(artist));
-
-        var newArtist = artistService.getById(1L);
-
-        assertEquals(artist, newArtist);
-        verify(artistRepository, times(2)).findById(anyLong());
-
-    }
-
-    @Test
-    void when_getById_retries_thenThrows() {
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
-
-        when(artistRepository.findById(anyLong()))
+    void when_getArtist_fails_thenThrows() {
+        var externalId = UUID.randomUUID();
+        when(dataAccessService.getArtistByExternalId(any()))
                 .thenThrow(new RuntimeException());
 
         assertThrows(RuntimeException.class, ()->{
-            var newArtist = artistService.getById(1L);
-
+            var getArtistResponse = artistService.getArtist(brgi.grpc.GetArtistRequest.newBuilder()
+                    .setArtistId(externalId.toString()).build());
         });
-
-        verify(artistRepository, times(3)).findById(anyLong());
-
     }
 
     @Test
-    void when_deleteById_success_thenReturns() {
-        assertDoesNotThrow(()->{
-            artistService.deleteById(1L);
-        });
-        verify(artistRepository).deleteById(anyLong());
+    void when_getSongs_success_thenReturns() {
+        when(dataAccessService.getArtistByExternalId(any()))
+                .thenReturn(Artist.builder()
+                        .id(1L)
+                        .name("hey world")
+                        .timeStarted(Timestamp.from(Instant.now()))
+                        .songs(Set.of(Song.builder()
+                                .externalId(UUID.randomUUID()).build()))
+                        .build());
+
+        var songs = artistService.getSongs(UUID.randomUUID());
+
+        assertEquals(1, songs.size());
     }
 
     @Test
-    void when_deleteById_retries_thenReturns() {
-        doThrow(new RuntimeException())
-                .doNothing()
-                .when(artistRepository)
-                .deleteById(anyLong());
-
-        assertDoesNotThrow(()->{
-            artistService.deleteById(1L);
-        });
-        verify(artistRepository, times(2)).deleteById(anyLong());
-    }
-
-    @Test
-    void when_deleteById_retries_thenThrows() {
-        doThrow(new RuntimeException())
-                .when(artistRepository)
-                .deleteById(anyLong());
+    void when_getSongs_fails_thenThrows() {
+        when(dataAccessService.getArtistByExternalId(any()))
+                .thenThrow(new RuntimeException());
 
         assertThrows(RuntimeException.class, ()->{
-            artistService.deleteById(1L);
+            artistService.getSongs(UUID.randomUUID());
         });
-        verify(artistRepository, times(3)).deleteById(anyLong());
     }
 
     @Test
     void when_getAllAlbums_success_thenReturns() {
-        var albums = Set.of(Album.builder().title("hey").build());
+        when(dataAccessService.getArtistByExternalId(any()))
+                .thenReturn(Artist.builder()
+                        .id(1L)
+                        .name("hey world")
+                        .timeStarted(Timestamp.from(Instant.now()))
+                        .songs(Set.of(Song.builder()
+                                .externalId(UUID.randomUUID()).build()))
+                        .albums(Set.of(Album.builder()
+                                        .date(Timestamp.from(Instant.now()))
+                                        .title("title")
+                                .externalId(UUID.randomUUID())
+                                .build()))
+                        .build());
 
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(albums)
-                .build();
+        var response = artistService.getAllAlbums(brgi.grpc.GetAllAlbumsRequest.newBuilder()
+                .setArtistId(UUID.randomUUID().toString()).build());
 
-        when(artistRepository.findById(anyLong())).thenReturn(Optional.of(artist));
-
-        var albums1 = artistService.getAllAlbums(1L);
-
-        assertEquals(albums, albums1);
-
-        verify(artistRepository).findById(anyLong());
+        assertEquals(1, response.getAlbumList().size());
     }
 
     @Test
-    void when_getAllAlbums_retries_thenReturns() {
-        var albums = Set.of(Album.builder().title("hey").build());
-
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(albums)
-                .build();
-
-        when(artistRepository.findById(anyLong()))
-                .thenThrow(new RuntimeException())
-                .thenReturn(Optional.of(artist));
-
-        var albums1 = artistService.getAllAlbums(1L);
-
-        assertEquals(albums, albums1);
-
-        verify(artistRepository, times(2)).findById(anyLong());
-    }
-
-    @Test
-    void when_getAllAlbums_retries_thenThrows() {
-        var albums = Set.of(Album.builder().title("hey").build());
-
-        var artist = Artist.builder()
-                .songs(new HashSet<>())
-                .albums(albums)
-                .build();
-
-        when(artistRepository.findById(anyLong()))
+    void when_getAllAlbums_fails_thenThrows() {
+        when(dataAccessService.getArtistByExternalId(any()))
                 .thenThrow(new RuntimeException());
 
         assertThrows(RuntimeException.class, ()->{
-            var albums1 = artistService.getAllAlbums(1L);
+            var response = artistService.getAllAlbums(brgi.grpc.GetAllAlbumsRequest.newBuilder()
+                    .setArtistId(UUID.randomUUID().toString()).build());
         });
-
-        verify(artistRepository, times(3)).findById(anyLong());
     }
 
     @Test
     void when_getAllSongs_success_thenReturns() {
-        var songs = Set.of(Song.builder().title("hey").build());
+        when(dataAccessService.getArtistByExternalId(any()))
+                .thenReturn(Artist.builder()
+                        .id(1L)
+                        .name("hey world")
+                        .timeStarted(Timestamp.from(Instant.now()))
+                        .songs(Set.of(Song.builder()
+                                        .album(Album.builder()
+                                                .externalId(UUID.randomUUID()).build())
+                                        .title("hey world")
+                                        .dateReleased(Timestamp.from(Instant.now()))
+                                        .songContent(SongContent.builder()
+                                                .content(new byte[]{1, 2, 3})
+                                                .build())
+                                .externalId(UUID.randomUUID()).build()))
+                        .albums(Set.of(Album.builder()
+                                .date(Timestamp.from(Instant.now()))
+                                .title("title")
+                                .externalId(UUID.randomUUID())
+                                .build()))
+                        .build());
 
-        var artist = Artist.builder()
-                .songs(songs)
-                .albums(new HashSet<>())
-                .build();
+        var response = artistService.getAllSongs(brgi.grpc.GetAllSongsRequest.newBuilder()
+                .setArtistId(UUID.randomUUID().toString()).build());
 
-        when(artistRepository.findById(anyLong()))
-                .thenReturn(Optional.of(artist));
-
-        var songs1 = artistService.getAllSongs(1L);
-
-        assertEquals(songs, songs1);
-
-        verify(artistRepository).findById(anyLong());
-    }
-
-
-    @Test
-    void when_getAllSongs_retries_thenReturns() {
-        var songs = Set.of(Song.builder().title("hey").build());
-
-        var artist = Artist.builder()
-                .songs(songs)
-                .albums(new HashSet<>())
-                .build();
-
-        when(artistRepository.findById(anyLong()))
-                .thenThrow(new RuntimeException())
-                .thenReturn(Optional.of(artist));
-
-        var songs1 = artistService.getAllSongs(1L);
-
-        assertEquals(songs, songs1);
-
-        verify(artistRepository, times(2)).findById(anyLong());
+        assertEquals(1, response.getSongList().size());
     }
 
     @Test
-    void when_getAllSongs_retries_thenThrows() {
-        var songs = Set.of(Song.builder().title("hey").build());
-
-        var artist = Artist.builder()
-                .songs(songs)
-                .albums(new HashSet<>())
-                .build();
-
-        when(artistRepository.findById(anyLong()))
+    void when_getAllSongs_fails_thenThrows() {
+        when(dataAccessService.getArtistByExternalId(any()))
                 .thenThrow(new RuntimeException());
 
         assertThrows(RuntimeException.class, ()->{
-            var songs1 = artistService.getAllSongs(1L);
-
+            var response = artistService.getAllSongs(brgi.grpc.GetAllSongsRequest.newBuilder()
+                    .setArtistId(UUID.randomUUID().toString()).build());
         });
 
-        verify(artistRepository, times(3)).findById(anyLong());
     }
 
     @Test
-    void when_getArtistByName_success_thenReturns() {
-        var artist = Artist.builder()
-                .name("hello")
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
-
-        when(artistRepository.findByName(anyString())).thenReturn(Optional.of(artist));
-
-        var artist1 = artistService.getArtistByName("hello");
-
-        assertEquals(artist, artist1);
-
-        verify(artistRepository).findByName(anyString());
-
+    void when_getAllSongs_failsWith_noArtistId_thenThrows(){
+        assertThrows(RuntimeException.class, ()->{
+            var response = artistService.getAllSongs(brgi.grpc.GetAllSongsRequest.newBuilder()
+                    .build());
+        });
     }
 
     @Test
-    void when_getArtistByName_retries_thenReturns() {
-        var artist = Artist.builder()
-                .name("hello")
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
-
-        when(artistRepository.findByName(anyString()))
-                .thenThrow(new RuntimeException())
-                .thenReturn(Optional.of(artist));
-
-        var artist1 = artistService.getArtistByName("hello");
-
-        assertEquals(artist, artist1);
-
-        verify(artistRepository, times(2)).findByName(anyString());
-
+    void when_deleteArtist_success_thenReturns() {
+        when(dataAccessService.getArtistByExternalId(any())).thenReturn(Artist.builder()
+                .id(1L).build());
+        assertDoesNotThrow(()->{
+            artistService.deleteArtist(brgi.grpc.DeleteArtistRequest.newBuilder()
+                            .setArtistId(UUID.randomUUID().toString())
+                    .build());
+        });
     }
 
     @Test
-    void when_getArtistByName_retries_thenThrows() {
-        var artist = Artist.builder()
-                .name("hello")
-                .songs(new HashSet<>())
-                .albums(new HashSet<>())
-                .build();
+    void when_deleteArtist_findArtistById_fails_thenThrows() {
+        when(dataAccessService.getArtistByExternalId(any())).thenThrow(new NoSuchElementException());
+        assertThrows(RuntimeException.class, ()->{
+            artistService.deleteArtist(brgi.grpc.DeleteArtistRequest.newBuilder()
+                    .setArtistId(UUID.randomUUID().toString())
+                    .build());
+        });
+    }
 
-        when(artistRepository.findByName(anyString()))
-                .thenThrow(new RuntimeException());
+    @Test
+    void when_deleteArtist_failsToDelete_thenThrows() {
+        when(dataAccessService.getArtistByExternalId(any())).thenReturn(Artist.builder()
+                .id(1L).build());
+
+        doThrow(new RuntimeException())
+                .when(dataAccessService)
+                .deleteArtistById(anyLong());
 
         assertThrows(RuntimeException.class, ()->{
-            var artist1 = artistService.getArtistByName("hello");
+            artistService.deleteArtist(brgi.grpc.DeleteArtistRequest.newBuilder()
+                    .setArtistId(UUID.randomUUID().toString())
+                    .build());
         });
-
-
-        verify(artistRepository, times(3)).findByName(anyString());
-
     }
-
 }

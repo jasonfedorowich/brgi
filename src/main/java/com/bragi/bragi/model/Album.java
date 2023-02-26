@@ -8,10 +8,7 @@ import org.hibernate.annotations.Cascade;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Getter
@@ -22,22 +19,40 @@ public class Album {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "album_id")
+    @Column(name = "id")
     private long id;
+
+    @Column(name = "external_id")
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID externalId;
 
     @Column(name = "title", columnDefinition = "UNIQUE NON NULL")
     private String title;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "album_artist",
-            joinColumns = @JoinColumn(name = "album_id"),
-            inverseJoinColumns = @JoinColumn(name = "artist_id"))
+            joinColumns = @JoinColumn(name = "id"),
+            inverseJoinColumns = @JoinColumn(name = "id"))
     private Set<Artist> artists = new HashSet<>();
+
+    public Set<Artist> getArtists(){
+        if(artists == null){
+            artists = new HashSet<>();
+        }
+        return artists;
+    }
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<Song> songs = new HashSet<>();
 
-    @Column(name = "release_date")
+    public Set<Song> getSongs(){
+        if(songs == null){
+            songs = new HashSet<>();
+        }
+        return songs;
+    }
+
+    @Column(name = "release_date", nullable = false)
     private Timestamp date;
 
     @Override

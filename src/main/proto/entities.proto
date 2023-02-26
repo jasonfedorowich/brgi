@@ -1,0 +1,170 @@
+syntax = "proto3";
+package brgi.grpc;
+
+option java_multiple_files = true;
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+message Song{
+  string song_id = 1;
+  string title = 2;
+  string album_id = 3;
+  repeated string artist_id = 4;
+  int64 duration = 5;
+  bytes content = 6;
+  google.protobuf.Timestamp release_date = 7;
+}
+
+message Album{
+  string album_id = 1;
+  string title = 2;
+  repeated string artist_id = 3;
+  repeated string song_id = 4;
+  google.protobuf.Timestamp release_date = 5;
+}
+
+message Artist{
+  string artist_id = 1;
+  string name = 2;
+  repeated string album_id = 3;
+  repeated string song_id = 4;
+  google.protobuf.Timestamp time_formed = 5;
+}
+
+//songs
+message AddSongRequest{
+  Song song = 1;
+}
+
+message AddSongResponse{
+  string song_id = 1;
+  Song song = 2;
+}
+
+message GetSongRequest{
+  string song_id = 1;
+}
+
+message GetSongResponse{
+  Song song = 1;
+}
+
+message StreamSongRequest{
+  string song_id = 1;
+}
+
+message StreamSongResponse{
+  bytes content = 1;
+}
+
+message GetSongAlbumRequest{
+  string song_id = 1;
+}
+
+message GetSongAlbumResponse{
+  Album album = 1;
+}
+
+message GetArtistsRequest{
+  optional string song_id = 1;
+  optional string album_id = 2;
+}
+
+message GetArtistsResponse{
+  repeated Artist artist = 1;
+}
+
+message DeleteSongRequest{
+  string song_id = 1;
+}
+
+message DeleteSongResponse{
+
+}
+
+
+//albums
+message AddAlbumRequest{
+  Album album = 1;
+}
+
+message AddAlbumResponse{
+  string album_id = 1;
+  Album album = 2;
+}
+
+message GetAlbumRequest{
+  string album_id = 1;
+}
+
+message GetAlbumResponse{
+  Album album = 1;
+}
+
+message StreamAlbumRequest{
+  string album_id = 1;
+}
+
+message StreamAlbumResponse{
+  bytes content = 1;
+}
+
+message GetAllSongsRequest{
+  optional string album_id = 1;
+  optional string artist_id = 2;
+}
+
+message GetAllSongsResponse{
+  repeated Song song = 1;
+}
+
+message DeleteAlbumRequest{
+  string album_id = 1;
+}
+
+message DeleteAlbumResponse{
+
+}
+
+//artist
+message AddArtistRequest{
+  Artist artist = 1;
+}
+
+message AddArtistResponse{
+  string artist_id = 1;
+  Artist artist = 2;
+}
+
+message GetArtistRequest{
+  string artist_id = 1;
+}
+
+message GetArtistResponse{
+  Artist artist = 1;
+}
+
+message StreamArtistRequest{
+  string artist_id = 1;
+}
+
+message StreamArtistResponse{
+  bytes content = 1;
+}
+
+message GetAllAlbumsRequest{
+  string artist_id = 1;
+}
+
+message GetAllAlbumsResponse{
+  repeated Album album = 1;
+}
+
+message DeleteArtistRequest{
+  string artist_id = 1;
+}
+
+message DeleteArtistResponse{
+
+}
+

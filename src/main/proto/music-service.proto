@@ -1,0 +1,43 @@
+syntax = "proto3";
+package brgi.grpc;
+
+option java_multiple_files = true;
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "entities.proto";
+
+service BrgiSongService{
+
+  //Song rpc's
+  rpc addSong(AddSongRequest) returns (AddSongResponse) {};
+  rpc getSong(GetSongRequest) returns (GetSongResponse) {};
+  rpc streamSong(StreamSongRequest) returns (stream StreamSongResponse) {};
+  rpc getSongAlbum(GetSongAlbumRequest) returns (GetSongAlbumResponse) {};
+  rpc getSongArtists(GetArtistsRequest) returns (GetArtistsResponse) {};
+  rpc deleteSong(DeleteSongRequest) returns (DeleteSongResponse) {};
+
+}
+
+service BrgiAlbumService{
+
+  //Album rpc's
+  rpc addAlbum(AddAlbumRequest) returns (AddAlbumResponse) {};
+  rpc getAlbum(GetAlbumRequest) returns (GetAlbumResponse) {};
+  rpc streamAlbum(StreamAlbumRequest) returns (stream StreamAlbumResponse) {};
+  rpc getAllSongs(GetAllSongsRequest) returns (GetAllSongsResponse) {};
+  rpc getAlbumArtists(GetArtistsRequest) returns (GetArtistsResponse) {};
+  rpc deleteAlbum(DeleteAlbumRequest) returns (DeleteAlbumResponse) {};
+
+}
+
+service BrgiArtistService{
+
+  //Album rpc's
+  rpc addArtist(AddArtistRequest) returns (AddArtistResponse) {};
+  rpc getArtist(GetArtistRequest) returns (GetArtistResponse) {};
+  rpc streamArtist(StreamArtistRequest) returns (stream StreamArtistResponse) {};
+  rpc getAllSongs(GetAllSongsRequest) returns (GetAllSongsResponse) {};
+  rpc getAllAlbums(GetAllAlbumsRequest) returns (GetAllAlbumsResponse) {};
+  rpc deleteArtist(DeleteArtistRequest) returns (DeleteArtistResponse) {};
+
+}
