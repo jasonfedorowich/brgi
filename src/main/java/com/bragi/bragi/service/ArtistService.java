@@ -56,8 +56,8 @@ public class ArtistService {
     }
 
     public Set<Song> getSongs(UUID externalId){
-        var albumFromDb = dataAccessService.getArtistByExternalId(externalId);
-        return albumFromDb.getSongs();
+        var artist = dataAccessService.getArtistByExternalId(externalId);
+        return artist.getSongs();
     }
 
 
