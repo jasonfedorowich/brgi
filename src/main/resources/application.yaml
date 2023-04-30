@@ -6,3 +6,11 @@ spring:
   jpa:
     database-platform: "org.hibernate.dialect.PostgreSQLDialect"
     generate-ddl: "true"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
