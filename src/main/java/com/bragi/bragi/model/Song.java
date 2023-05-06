@@ -21,10 +21,10 @@ public class Song {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id")
+    @Column(name = "id", unique = true, nullable = false)
     private long id;
 
-    @Column(name = "external_id")
+    @Column(name = "external_id", unique = true, nullable = false)
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID externalId;
 
@@ -37,8 +37,8 @@ public class Song {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "song_artist",
-            joinColumns = @JoinColumn(name = "id"),
-            inverseJoinColumns = @JoinColumn(name= "id"))
+            joinColumns = @JoinColumn(name = "song_id"),
+            inverseJoinColumns = @JoinColumn(name= "artist_id"))
     private Set<Artist> artists = new HashSet<>();
 
     public Set<Artist> getArtists(){

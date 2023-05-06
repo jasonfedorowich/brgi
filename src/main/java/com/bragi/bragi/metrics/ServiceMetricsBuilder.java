@@ -16,14 +16,17 @@ public class ServiceMetricsBuilder {
     private Counter errorCounter;
 
     public ServiceMetricsBuilder(CollectorRegistry collectorRegistry){
-
         latencyHistogram = Histogram.build()
+                .name("brgi_service_latency")
+                .help("Histogram for grpc latency")
                 .labelNames("grpc_method")
                 .create()
                 .register(collectorRegistry);
 
         errorCounter = Counter
                 .build()
+                .name("brgi_service_error_counter")
+                .help("Counter for grpc errors")
                 .labelNames("grpc_method")
                 .create()
                 .register(collectorRegistry);

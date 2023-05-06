@@ -22,18 +22,18 @@ public class Bootstrap implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        var artist1 = Artist.builder().build();
-        artist1 = artistRepository.save(artist1);
-        log.info("Artist: {}",  artist1);
-        var album = Album.builder().build();
-        album.getArtists().add(artist1);
-        album = albumRepository.save(album);
-        artist1.getAlbums().add(album);
-        artistRepository.save(artist1);
-        log.info("Album: {}", album);
-        var albumFromDb = albumRepository.findById(album.getId());
-        var artists = albumFromDb.orElseThrow().getArtists();
-        log.info("is true: {}", artists.contains(artist1));
+//        var artist1 = Artist.builder().build();
+//        artist1 = artistRepository.save(artist1);
+//        log.info("Artist: {}",  artist1);
+//        var album = Album.builder().build();
+//        album.getArtists().add(artist1);
+//        album = albumRepository.save(album);
+//        artist1.getAlbums().add(album);
+//        artistRepository.save(artist1);
+//        log.info("Album: {}", album);
+//        var albumFromDb = albumRepository.findById(album.getId());
+//        var artists = albumFromDb.orElseThrow().getArtists();
+//        log.info("is true: {}", artists.contains(artist1));
 
     }
 }

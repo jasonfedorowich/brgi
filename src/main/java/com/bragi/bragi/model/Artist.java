@@ -21,10 +21,10 @@ public class Artist {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id")
+    @Column(name = "id", unique = true, nullable = false)
     private long id;
 
-    @Column(name = "external_id")
+    @Column(name = "external_id", nullable = false, unique = true)
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID externalId;
 

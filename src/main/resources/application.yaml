@@ -7,6 +7,11 @@ spring:
     database-platform: "org.hibernate.dialect.PostgreSQLDialect"
     generate-ddl: "true"
 management:
+  server:
+    port: 8081
+    address: 127.0.0.1
+  security:
+    enabled: false
   endpoints:
     web:
       exposure:
@@ -14,3 +19,9 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+retry:
+  max-attempts: 3
+  min-wait-between-millis: 1000
+  max-wait-between-millis: 10000
+server:
+  port: 8080

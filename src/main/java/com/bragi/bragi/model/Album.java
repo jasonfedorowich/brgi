@@ -19,20 +19,20 @@ public class Album {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id")
+    @Column(name = "id", nullable = false, unique = true)
     private long id;
 
-    @Column(name = "external_id")
+    @Column(name = "external_id", nullable = false, unique = true)
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID externalId;
 
-    @Column(name = "title", columnDefinition = "UNIQUE NON NULL")
+    @Column(name = "title", nullable = false, unique = true)
     private String title;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "album_artist",
-            joinColumns = @JoinColumn(name = "id"),
-            inverseJoinColumns = @JoinColumn(name = "id"))
+            joinColumns = @JoinColumn(name = "album_id"),
+            inverseJoinColumns = @JoinColumn(name = "artist_id"))
     private Set<Artist> artists = new HashSet<>();
 
     public Set<Artist> getArtists(){
