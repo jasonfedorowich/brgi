@@ -6,18 +6,18 @@ import com.bragi.bragi.model.Song;
 import com.bragi.bragi.model.SongContent;
 import com.bragi.bragi.repository.DataAccessService;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -242,4 +242,118 @@ class ArtistServiceTest {
                     .build());
         });
     }
+
+    @Test
+    void when_findAllArtists_success_thenReturns(){
+        when(dataAccessService.findAllArtists(any()))
+                .thenReturn(Page.empty());
+        List<Artist> artistPage = artistService.findAllArtists(1, 1, "desc");
+        assertTrue(artistPage.isEmpty());
+
+    }
+    @Test
+    void when_findAllArtists_invalidSort_thenThrows(){
+        assertThrows(RuntimeException.class, ()->{
+            artistService.findAllArtists(1, 1, "invalid");
+        });
+    }
+
+    @Test
+    void when_findAllArtists_dataAccessFails_thenThrows(){
+        when(dataAccessService.findAllArtists(any()))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            artistService.findAllArtists(1, 1, "desc");
+        });
+    }
+
+    @Test
+    void when_getArtistById_success_thenReturns(){
+        var uuid = UUID.randomUUID();
+        when(dataAccessService.getArtistByExternalId(uuid))
+                .thenReturn(Artist.builder().build());
+
+        var artist = artistService.getArtist(uuid.toString());
+        assertEquals(Artist.builder().build(), artist);
+    }
+
+    @Test
+    void when_getArtistById_fails_thenThrows(){
+        var uuid = UUID.randomUUID();
+        when(dataAccessService.getArtistByExternalId(uuid))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            var artist = artistService.getArtist(uuid.toString());
+        });
+
+    }
+
+    @Test
+    void when_getArtistById_invalidId_thenThrows(){
+        assertThrows(RuntimeException.class, ()->{
+            var artist = artistService.getArtist("invalid-uuid");
+        });
+    }
+
+    @Test
+    void when_storeDto_success_thenReturns(){
+        var externalId = UUID.randomUUID();
+        Artist expected = Artist.builder().externalId(externalId).build();
+        when(dataAccessService.saveArtist(any()))
+                .thenReturn(expected);
+
+        var artist = artistService.store(com.bragi.bragi.rest.dto.Artist.builder()
+                        .timeStarted(Timestamp.from(Instant.now()))
+                        .name("hello world")
+                .build());
+
+        assertEquals(expected, artist);
+    }
+
+    @Test
+    void when_storeDto_fails_thenThrows(){
+        var externalId = UUID.randomUUID();
+        Artist expected = Artist.builder().externalId(externalId).build();
+        when(dataAccessService.saveArtist(any()))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            var artist = artistService.store(com.bragi.bragi.rest.dto.Artist.builder()
+                    .timeStarted(Timestamp.from(Instant.now()))
+                    .name("hello world")
+                    .build());
+        });
+
+    }
+
+    @Test
+    void when_deleteArtistId_success_thenReturns(){
+        when(dataAccessService.getArtistByExternalId(any())).thenReturn(Artist.builder().build());
+        assertDoesNotThrow(()->{
+            artistService.deleteArtist(UUID.randomUUID().toString());
+        });
+
+    }
+
+    @Test
+    void when_deleteArtistId_fails_noArtist_thenThrows(){
+        when(dataAccessService.getArtistByExternalId(any())).thenThrow(new NoSuchElementException());
+        assertThrows(RuntimeException.class, ()->{
+            artistService.deleteArtist(UUID.randomUUID().toString());
+        });
+    }
+
+    @Test
+    void when_deleteArtistId_fails_failsToDelete_thenThrows(){
+        when(dataAccessService.getArtistByExternalId(any())).thenReturn(Artist.builder().build());
+        doThrow(new RuntimeException())
+                .when(dataAccessService)
+                .deleteArtistById(anyLong());
+        assertThrows(RuntimeException.class, ()->{
+            artistService.deleteArtist(UUID.randomUUID().toString());
+        });
+    }
+
 }

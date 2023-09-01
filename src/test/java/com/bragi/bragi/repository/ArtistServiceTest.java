@@ -13,11 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -415,6 +415,30 @@ class ArtistServiceTest {
 
 
         verify(artistRepository, times(3)).findByExternalId(any());
+
+    }
+
+    @Test
+    void when_findAllArtists_success_thenReturns(){
+        when(artistRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+
+        var page = artistService.findAllArtists(PageRequest.of(1, 2));
+
+        assertTrue(page.isEmpty());
+
+        verify(artistRepository).findAll(any(Pageable.class));
+    }
+
+    @Test
+    void when_findAllArtist_fails_thenThrows(){
+        when(artistRepository.findAll(any(Pageable.class))).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            var page = artistService.findAllArtists(PageRequest.of(1, 2));
+        });
+
+
+        verify(artistRepository, times(3)).findAll(any(Pageable.class));
 
     }
 

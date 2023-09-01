@@ -1,6 +1,9 @@
 package com.bragi.bragi.server.handlers;
 
+import brgi.grpc.AddArtistRequest;
 import brgi.grpc.AddArtistResponse;
+import brgi.grpc.DeleteArtistRequest;
+import brgi.grpc.GetArtistRequest;
 import com.bragi.bragi.metrics.ServiceMetrics;
 import com.bragi.bragi.metrics.ServiceMetricsBuilder;
 import com.bragi.bragi.model.Song;
@@ -47,7 +50,7 @@ public class ArtistHandlerTest {
     void when_addArtist_success_thenReturns() throws Exception {
         var expected = brgi.grpc.AddArtistResponse.newBuilder()
                 .setArtistId("new-artist-id").build();
-        when(artistService.store(any())).thenReturn(
+        when(artistService.store(any(AddArtistRequest.class))).thenReturn(
                 expected);
 
         StreamRecorder<AddArtistResponse> responseObserver = StreamRecorder.create();
@@ -55,13 +58,13 @@ public class ArtistHandlerTest {
         responseObserver.awaitCompletion(1000, TimeUnit.MILLISECONDS);
         var response = responseObserver.getValues().get(0);
         assertEquals(expected, response);
-        verify(artistService).store(any());
+        verify(artistService).store(any(AddArtistRequest.class));
 
     }
 
     @Test
     void when_addArtist_fails_thenThrows() throws Exception {
-        when(artistService.store(any())).thenThrow(new RuntimeException());
+        when(artistService.store(any(AddArtistRequest.class))).thenThrow(new RuntimeException());
 
         StreamRecorder<brgi.grpc.AddArtistResponse> responseObserver = StreamRecorder.create();
         artistHandler.addArtist(brgi.grpc.AddArtistRequest.newBuilder().build(), responseObserver);
@@ -77,7 +80,7 @@ public class ArtistHandlerTest {
     @Test
     void when_getArtist_success_thenReturns() throws Exception {
         var expected = brgi.grpc.GetArtistResponse.newBuilder().build();
-        when(artistService.getArtist(any())).thenReturn(expected);
+        when(artistService.getArtist(any(GetArtistRequest.class))).thenReturn(expected);
 
         StreamRecorder<brgi.grpc.GetArtistResponse> responseObserver = StreamRecorder.create();
         artistHandler.getArtist(brgi.grpc.GetArtistRequest.newBuilder().build(), responseObserver);
@@ -92,7 +95,7 @@ public class ArtistHandlerTest {
     @Test
     void when_getArtist_fails_thenThrows() throws Exception {
         var expected = brgi.grpc.GetArtistResponse.newBuilder().build();
-        when(artistService.getArtist(any())).thenThrow(new RuntimeException());
+        when(artistService.getArtist(any(GetArtistRequest.class))).thenThrow(new RuntimeException());
 
         StreamRecorder<brgi.grpc.GetArtistResponse> responseObserver = StreamRecorder.create();
         artistHandler.getArtist(brgi.grpc.GetArtistRequest.newBuilder().build(), responseObserver);
@@ -212,7 +215,7 @@ public class ArtistHandlerTest {
     @Test
     void when_deleteArtist_success_thenReturns() throws Exception {
         var expected = brgi.grpc.DeleteArtistResponse.getDefaultInstance();
-        when(artistService.deleteArtist(any()))
+        when(artistService.deleteArtist(any(DeleteArtistRequest.class)))
                 .thenReturn(expected);
         StreamRecorder<brgi.grpc.DeleteArtistResponse> responseObserver = StreamRecorder.create();
 
@@ -227,7 +230,7 @@ public class ArtistHandlerTest {
     @Test
     void when_deleteArtist_fails_thenThrows() throws Exception {
         var expected = brgi.grpc.DeleteArtistResponse.getDefaultInstance();
-        when(artistService.deleteArtist(any()))
+        when(artistService.deleteArtist(any(DeleteArtistRequest.class)))
                 .thenThrow(new RuntimeException());
         StreamRecorder<brgi.grpc.DeleteArtistResponse> responseObserver = StreamRecorder.create();
 

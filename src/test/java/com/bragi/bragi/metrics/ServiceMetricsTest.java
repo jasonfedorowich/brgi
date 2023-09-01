@@ -35,7 +35,7 @@ class ServiceMetricsTest {
         when(counter.labels(anyString())).thenReturn(child);
 
 
-        when(serviceMetricsBuilder.getErrorCounter()).thenReturn(counter);
+        when(serviceMetricsBuilder.getGrpcErrorCounter()).thenReturn(counter);
 
         serviceMetrics.incrementErrorCount("hello-world");
 
@@ -50,7 +50,7 @@ class ServiceMetricsTest {
 
         when(histogram.labels(anyString())).thenReturn(child);
 
-        when(serviceMetricsBuilder.getLatencyHistogram()).thenReturn(histogram);
+        when(serviceMetricsBuilder.getGrpcLatencyHistogram()).thenReturn(histogram);
 
         serviceMetrics.recordLatency("hello-world", 1.0);
 
@@ -67,7 +67,7 @@ class ServiceMetricsTest {
 
         when(histogram.labels(anyString())).thenReturn(child);
 
-        when(serviceMetricsBuilder.getLatencyHistogram()).thenReturn(histogram);
+        when(serviceMetricsBuilder.getGrpcLatencyHistogram()).thenReturn(histogram);
 
         serviceMetrics.recordLatency("hello-world", runnable);
         runnable.run();
@@ -86,12 +86,41 @@ class ServiceMetricsTest {
 
         when(histogram.labels(anyString())).thenReturn(child);
 
-        when(serviceMetricsBuilder.getLatencyHistogram()).thenReturn(histogram);
+        when(serviceMetricsBuilder.getGrpcLatencyHistogram()).thenReturn(histogram);
 
         serviceMetrics.recordLatency("hello-world", callable);
         callable.call();
 
         verify(child).time(callable);
         assertEquals(1, i.get());
+    }
+
+    @Test
+    void when_recordRestLatency_success_thenReturns(){
+        Histogram histogram = mock(Histogram.class);
+        Histogram.Child child = mock(Histogram.Child.class);
+
+        when(histogram.labels(anyString())).thenReturn(child);
+
+        when(serviceMetricsBuilder.getRestLatencyHistogram()).thenReturn(histogram);
+
+        serviceMetrics.recordRestLatency("hello", 1000);
+        verify(child).observe(1000);
+
+    }
+
+    @Test
+    void when_incrementRestErrorCount_success_thenReturns(){
+        Counter counter = mock(Counter.class);
+        Counter.Child child = mock(Counter.Child.class);
+
+        when(counter.labels(anyString())).thenReturn(child);
+
+        when(serviceMetricsBuilder.getRestErrorCounter()).thenReturn(counter);
+
+        serviceMetrics.incrementRestErrorCount("hello");
+
+        verify(child).inc();
+
     }
 }

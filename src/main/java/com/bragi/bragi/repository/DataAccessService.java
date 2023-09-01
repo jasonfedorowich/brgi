@@ -10,6 +10,8 @@ import com.bragi.bragi.service.utils.RetryUtils;
 import com.google.protobuf.ByteString;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -254,6 +256,15 @@ public class DataAccessService {
                 .setAlbumId(song.getAlbum().getExternalId().toString())
                 .addAllArtistId(artistIds)
                 .build();
+    }
+
+    public Page<Artist> findAllArtists(Pageable pageable) {
+        return RetryUtils.getResultFromRetry(()-> artistRepository.findAll(pageable),
+                "Starting to page through artists: {}",
+                "Running page through artists: {}",
+                retryConfig.getMaxAttempts(),
+                retryConfig.getMaxWaitBetweenMillis(),
+                retryConfig.getMinWaitBetweenMillis());
     }
 
     //endregion

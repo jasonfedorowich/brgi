@@ -1,24 +1,22 @@
 package com.bragi.bragi.service;
 
-import com.bragi.bragi.model.Album;
 import com.bragi.bragi.model.Artist;
 import com.bragi.bragi.model.Song;
-import com.bragi.bragi.repository.ArtistRepository;
 import com.bragi.bragi.repository.DataAccessService;
-import com.bragi.bragi.retry.Retry;
-import com.bragi.bragi.service.config.RetryConfig;
 import com.bragi.bragi.service.utils.GrpcObjectMapper;
-import com.bragi.bragi.service.utils.RetryUtils;
-import com.google.protobuf.ByteString;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 @Service
@@ -102,4 +100,43 @@ public class ArtistService {
         return brgi.grpc.DeleteArtistResponse.getDefaultInstance();
     }
 
+    public List<Artist> findAllArtists(int offset, int size, String sort) {
+        Sort sortDirection;
+        if(sort.equals("asc")){
+            sortDirection = Sort.by("id").ascending();
+        }else if(sort.equals("desc")){
+            sortDirection = Sort.by("id").descending();
+        }else{
+            throw new RuntimeException("Invalid sort order must be desc or asc");
+        }
+        if(size > 10000 || size < 0)
+            throw new RuntimeException(String.format("Invalid size provided: %d", size));
+
+        Pageable pageable = PageRequest.of(offset, size, sortDirection);
+        Page<Artist> artistPage = dataAccessService.findAllArtists(pageable);
+        return artistPage.getContent();
+
+    }
+
+
+    public Artist getArtist(String id) {
+        return dataAccessService.getArtistByExternalId(UUID.fromString(id));
+    }
+
+    public Artist store(com.bragi.bragi.rest.dto.Artist artist) {
+        return dataAccessService.saveArtist(Artist.builder()
+                        .timeStarted(artist.getTimeStarted())
+                        .name(artist.getName())
+                .build());
+    }
+
+    public void deleteArtist(String id){
+        Artist artist;
+        try{
+            artist = dataAccessService.getArtistByExternalId(UUID.fromString(id));
+        }catch (NoSuchElementException e){
+            throw new RuntimeException("No artist found to delete");
+        }
+        dataAccessService.deleteArtistById(artist.getId());
+    }
 }
