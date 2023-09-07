@@ -25,7 +25,7 @@ public class ArtistController {
     private final ArtistService artistService;
     private final ServiceMetrics serviceMetrics;
 
-    @GetMapping("/")
+    @GetMapping("/page")
     public Mono<List<Artist>> getArtists(@RequestParam("offset") int offset,
                                          @RequestParam("size") int size,
                                          @RequestParam("sort") String sort){

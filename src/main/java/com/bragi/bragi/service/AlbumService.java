@@ -1,5 +1,7 @@
 package com.bragi.bragi.service;
 
+import brgi.grpc.AddAlbumResponse;
+import brgi.grpc.GetAlbumResponse;
 import com.bragi.bragi.model.Album;
 import com.bragi.bragi.model.Artist;
 import com.bragi.bragi.model.Song;
@@ -12,6 +14,10 @@ import com.bragi.bragi.service.utils.GrpcObjectMapper;
 import com.bragi.bragi.service.utils.RetryUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -100,5 +106,45 @@ public class AlbumService {
 
     }
 
+    public List<Album> findAllAlbums(int offset, int size, String sort) {
+        Sort sortDirection;
+        if(sort.equals("asc")){
+            sortDirection = Sort.by("id").ascending();
+        }else if(sort.equals("desc")){
+            sortDirection = Sort.by("id").descending();
+        }else{
+            throw new RuntimeException("Invalid sort order must be desc or asc");
+        }
+        if(size > 10000 || size < 0)
+            throw new RuntimeException(String.format("Invalid size provided: %d", size));
 
+        Pageable pageable = PageRequest.of(offset, size, sortDirection);
+        Page<Album> albumPage = dataAccessService.findAllAlbums(pageable);
+        return albumPage.getContent();
+    }
+
+    public Album getAlbum(String id) {
+        return dataAccessService.getAlbumByExternalId(UUID.fromString(id));
+    }
+
+    public Album store(com.bragi.bragi.rest.dto.Album album) {
+        var albumEntity = com.bragi.bragi.model.Album.builder()
+                .title(album.getTitle())
+                .date(album.getDate())
+                .artists(album.getArtists()
+                        .stream().map(dataAccessService::getArtistByExternalId).collect(Collectors.toSet()))
+                .build();
+        return dataAccessService.saveAlbum(albumEntity);
+
+    }
+
+    public void deleteAlbum(String id) {
+        Album album;
+        try{
+            album = dataAccessService.getAlbumByExternalId(UUID.fromString(id));
+        }catch (NoSuchElementException e){
+            throw new RuntimeException("No album found to delete");
+        }
+        dataAccessService.deleteAlbumById(album.getId());
+    }
 }

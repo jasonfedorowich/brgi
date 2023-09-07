@@ -16,6 +16,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import javax.swing.text.html.Option;
 import java.util.HashSet;
@@ -419,5 +422,29 @@ class AlbumServiceTest {
         });
 
         verify(albumRepository, times(3)).findByExternalId(any());
+    }
+
+    @Test
+    void when_findAllAlbums_success_thenReturns(){
+        when(albumRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
+
+        var page = albumService.findAllAlbums(PageRequest.of(1, 2));
+
+        assertTrue(page.isEmpty());
+
+        verify(albumRepository).findAll(any(Pageable.class));
+    }
+
+    @Test
+    void when_findAllAlbums_fails_thenThrows(){
+        when(albumRepository.findAll(any(Pageable.class))).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            var page = albumService.findAllAlbums(PageRequest.of(1, 2));
+        });
+
+
+        verify(albumRepository, times(3)).findAll(any(Pageable.class));
+
     }
 }

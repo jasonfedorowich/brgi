@@ -11,6 +11,8 @@ public class GlobalRestExceptionHandler implements WebExceptionHandler {
     //todo
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
+
+
         return null;
     }
 }

@@ -12,10 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 
@@ -275,6 +277,127 @@ class AlbumServiceTest {
         });
 
     }
+
+    @Test
+    void when_findAllAlbums_success_thenReturns(){
+        when(dataAccessService.findAllAlbums(any()))
+                .thenReturn(Page.empty());
+        List<Album> albumPage = albumService.findAllAlbums(1, 1, "desc");
+        assertTrue(albumPage.isEmpty());
+
+    }
+    @Test
+    void when_findAllAlbums_invalidSort_thenThrows(){
+        assertThrows(RuntimeException.class, ()->{
+            albumService.findAllAlbums(1, 1, "invalid");
+        });
+    }
+
+    @Test
+    void when_findAllArtists_dataAccessFails_thenThrows(){
+        when(dataAccessService.findAllAlbums(any()))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            albumService.findAllAlbums(1, 1, "desc");
+        });
+    }
+
+    @Test
+    void when_getAlbumById_success_thenReturns(){
+        var uuid = UUID.randomUUID();
+        when(dataAccessService.getAlbumByExternalId(uuid))
+                .thenReturn(Album.builder().build());
+
+        var album = albumService.getAlbum(uuid.toString());
+        assertEquals(Album.builder().build(), album);
+    }
+
+    @Test
+    void when_getAlbumById_fails_thenThrows(){
+        var uuid = UUID.randomUUID();
+        when(dataAccessService.getAlbumByExternalId(uuid))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            var album = albumService.getAlbum(uuid.toString());
+        });
+
+    }
+    @Test
+    void when_getAlbumById_invalidId_thenThrows(){
+        assertThrows(RuntimeException.class, ()->{
+            var artist = albumService.getAlbum("invalid-uuid");
+        });
+    }
+
+    @Test
+    void when_storeDto_success_thenReturns(){
+        when(dataAccessService.getArtistByExternalId(any()))
+                .thenReturn(Artist.builder().build());
+        when(dataAccessService.saveAlbum(any()))
+                .thenReturn(Album.builder().build());
+
+        var album = albumService.store(com.bragi.bragi.rest.dto.Album.builder()
+                .artists(Set.of(UUID.randomUUID())).build());
+
+        assertEquals(Album.builder().build(), album);
+    }
+
+    @Test
+    void when_storeDto_failsLookup_thenThrows(){
+        when(dataAccessService.getArtistByExternalId(any()))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            var album = albumService.store(com.bragi.bragi.rest.dto.Album.builder()
+                    .artists(Set.of(UUID.randomUUID())).build());
+        });
+
+    }
+
+    @Test
+    void when_storeDto_failsToStore_thenThrows(){
+        when(dataAccessService.getArtistByExternalId(any()))
+                .thenReturn(Artist.builder().build());
+        when(dataAccessService.saveAlbum(any()))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            var album = albumService.store(com.bragi.bragi.rest.dto.Album.builder()
+                    .artists(Set.of(UUID.randomUUID())).build());
+        });
+
+    }
+
+    @Test
+    void when_deleteAlbumId_success_thenReturns(){
+        when(dataAccessService.getAlbumByExternalId(any())).thenReturn(Album.builder().build());
+        assertDoesNotThrow(()->{
+            albumService.deleteAlbum(UUID.randomUUID().toString());
+        });
+
+    }
+
+    @Test
+    void when_deleteAlbumId_fails_noArtist_thenThrows(){
+        when(dataAccessService.getAlbumByExternalId(any())).thenThrow(new NoSuchElementException());
+        assertThrows(RuntimeException.class, ()->{
+            albumService.deleteAlbum(UUID.randomUUID().toString());
+        });
+    }
+
+    @Test
+    void when_deleteAlbumId_fails_failsToDelete_thenThrows(){
+        when(dataAccessService.getAlbumByExternalId(any())).thenReturn(Album.builder().build());
+        doThrow(new RuntimeException())
+                .when(dataAccessService)
+                .deleteAlbumById(anyLong());
+        assertThrows(RuntimeException.class, ()->{
+            albumService.deleteAlbum(UUID.randomUUID().toString());
+        });
+    }
+
 
 
 }

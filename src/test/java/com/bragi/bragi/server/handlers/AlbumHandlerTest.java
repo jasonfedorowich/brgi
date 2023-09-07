@@ -1,6 +1,9 @@
 package com.bragi.bragi.server.handlers;
 
+import brgi.grpc.AddAlbumRequest;
 import brgi.grpc.AddAlbumResponse;
+import brgi.grpc.GetAlbumRequest;
+import brgi.grpc.GetArtistRequest;
 import com.bragi.bragi.metrics.ServiceMetrics;
 import com.bragi.bragi.model.Song;
 import com.bragi.bragi.model.SongContent;
@@ -49,7 +52,7 @@ public class AlbumHandlerTest {
     void when_addAlbum_success_thenReturns() throws Exception {
         var expected = brgi.grpc.AddAlbumResponse.newBuilder()
                 .setAlbumId(UUID.randomUUID().toString()).build();
-        when(albumService.store(any())).thenReturn(expected);
+        when(albumService.store(any(AddAlbumRequest.class))).thenReturn(expected);
 
         StreamRecorder<AddAlbumResponse> responseObserver = StreamRecorder.create();
 
@@ -67,7 +70,7 @@ public class AlbumHandlerTest {
     void when_addAlbum_fails_thenThrows() throws Exception {
         var expected = brgi.grpc.AddAlbumResponse.newBuilder()
                 .setAlbumId(UUID.randomUUID().toString()).build();
-        when(albumService.store(any())).thenThrow(new RuntimeException());
+        when(albumService.store(any(AddAlbumRequest.class))).thenThrow(new RuntimeException());
 
         StreamRecorder<brgi.grpc.AddAlbumResponse> responseObserver = StreamRecorder.create();
 
@@ -85,7 +88,7 @@ public class AlbumHandlerTest {
     @Test
     void when_getAlbum_success_thenReturns() throws Exception {
         var expected = brgi.grpc.GetAlbumResponse.newBuilder().build();
-        when(albumService.getAlbum(any())).thenReturn(expected);
+        when(albumService.getAlbum(any(GetAlbumRequest.class))).thenReturn(expected);
 
         StreamRecorder<brgi.grpc.GetAlbumResponse> responseObserver = StreamRecorder.create();
 
@@ -101,7 +104,7 @@ public class AlbumHandlerTest {
     @Test
     void when_getAlbum_fails_thenThrows() throws Exception {
         var expected = brgi.grpc.GetAlbumResponse.newBuilder().build();
-        when(albumService.getAlbum(any())).thenThrow(new RuntimeException());
+        when(albumService.getAlbum(any(GetAlbumRequest.class))).thenThrow(new RuntimeException());
 
         StreamRecorder<brgi.grpc.GetAlbumResponse> responseObserver = StreamRecorder.create();
 
