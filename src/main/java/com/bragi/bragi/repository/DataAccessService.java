@@ -276,5 +276,14 @@ public class DataAccessService {
                 retryConfig.getMinWaitBetweenMillis());
     }
 
+    public Page<Song> findAllSongs(Pageable pageable) {
+        return RetryUtils.getResultFromRetry(()->songRepository.findAll(pageable),
+                "Starting to page through songs: {}",
+                "Running page through songs: {}",
+                retryConfig.getMaxAttempts(),
+                retryConfig.getMaxWaitBetweenMillis(),
+                retryConfig.getMinWaitBetweenMillis());
+    }
+
     //endregion
 }

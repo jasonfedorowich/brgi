@@ -188,7 +188,7 @@ public class SongHandlerTest {
 
     @Test
     void when_deleteSong_success_thenReturns() throws Exception {
-        when(songService.deleteSong(any()))
+        when(songService.deleteSong(any(brgi.grpc.DeleteSongRequest.class)))
                 .thenReturn(brgi.grpc.DeleteSongResponse.getDefaultInstance());
 
         StreamRecorder<brgi.grpc.DeleteSongResponse> responseObserver = StreamRecorder.create();
@@ -201,7 +201,7 @@ public class SongHandlerTest {
 
     @Test
     void when_deleteSong_fails_thenThrows() throws Exception {
-        when(songService.deleteSong(any()))
+        when(songService.deleteSong(any(brgi.grpc.DeleteSongRequest.class)))
                 .thenThrow(new RuntimeException());
 
         StreamRecorder<brgi.grpc.DeleteSongResponse> responseObserver = StreamRecorder.create();

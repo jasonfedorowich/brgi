@@ -15,6 +15,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -439,6 +443,51 @@ class SongServiceTest {
 
         verify(songRepository, times(3)).findByExternalId(any());
 
+    }
+
+    @Test
+    void when_findAllSongs_success_thenReturns() {
+        var songs = Set.of(Song.builder()
+                .title("jason").build(), Song.builder().title("hello").build());
+
+        when(songRepository.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<Song>(songs.stream().toList()));
+
+        var songPage = songService.findAllSongs(PageRequest.of(1, 2));
+
+        assertEquals(songs.stream().toList(), songPage.getContent());
+
+        verify(songRepository).findAll(any(Pageable.class));
+
+    }
+
+    @Test
+    void when_findAllSongs_retries_thenReturns() {
+        var songs = Set.of(Song.builder()
+                .title("jason").build(), Song.builder().title("hello").build());
+
+        when(songRepository.findAll(any(Pageable.class)))
+                .thenThrow(new RuntimeException())
+                .thenReturn(new PageImpl<Song>(songs.stream().toList()));
+
+        var songPage = songService.findAllSongs(PageRequest.of(1, 2));
+
+        assertEquals(songs.stream().toList(), songPage.getContent());
+
+        verify(songRepository, times(2)).findAll(any(Pageable.class));
+    }
+
+    @Test
+    void when_findAllSongs_retries_thenThrows() {
+        var songs = Set.of(Song.builder()
+                .title("jason").build(), Song.builder().title("hello").build());
+
+        when(songRepository.findAll(any(Pageable.class)))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            var songPage = songService.findAllSongs(PageRequest.of(1, 2));
+        });
     }
 
 

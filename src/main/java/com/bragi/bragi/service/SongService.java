@@ -1,21 +1,22 @@
 package com.bragi.bragi.service;
 
-import com.bragi.bragi.model.Album;
-import com.bragi.bragi.model.Artist;
 import com.bragi.bragi.model.Song;
 import com.bragi.bragi.model.SongContent;
 import com.bragi.bragi.repository.DataAccessService;
-import com.bragi.bragi.repository.SongRepository;
-import com.bragi.bragi.service.config.RetryConfig;
 import com.bragi.bragi.service.utils.GrpcObjectMapper;
-import com.bragi.bragi.service.utils.RetryUtils;
-import com.google.protobuf.ByteString;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.Set;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -110,4 +111,56 @@ public class SongService {
     }
 
 
+    public List<Song> findAllSongs(int offset, int size, String sort) {
+        Sort sortDirection;
+        if(sort.equals("asc")){
+            sortDirection = Sort.by("id").ascending();
+        }else if(sort.equals("desc")){
+            sortDirection = Sort.by("id").descending();
+        }else{
+            throw new RuntimeException("Invalid sort order must be desc or asc");
+        }
+        if(size > 10000 || size < 0)
+            throw new RuntimeException(String.format("Invalid size provided: %d", size));
+
+        Pageable pageable = PageRequest.of(offset, size, sortDirection);
+        Page<Song> songPage = dataAccessService.findAllSongs(pageable);
+        return songPage.getContent();
+
+    }
+
+    public Song store(com.bragi.bragi.rest.dto.Song song, MultipartFile file) {
+        try{
+            var songModel = com.bragi.bragi.model.Song.builder()
+                    .duration(song.getDuration())
+                    .dateReleased(song.getDateReleased())
+                    .externalId(song.getExternalId())
+                    .id(song.getId())
+                    .title(song.getTitle())
+                    .artists(song.getArtists()
+                            .stream()
+                            .map(dataAccessService::getArtistByExternalId).collect(Collectors.toSet()))
+                    .songContent(
+                            SongContent.builder()
+                                    .content(file.getBytes())
+                                    .build()
+                    )
+                    .album(dataAccessService.getAlbumByExternalId(song.getAlbum()))
+                    .build();
+            return dataAccessService.saveSong(songModel);
+        }catch (IOException e){
+            throw new RuntimeException("Cannot access file: " + file.getName());
+        }
+
+    }
+
+    public void deleteSong(String id) {
+        Song song;
+        try{
+           song = dataAccessService.getSongByExternalId(UUID.fromString(id));
+        }catch (NoSuchElementException e){
+            throw new RuntimeException("No such song exists");
+        }
+        dataAccessService.deleteSongById(song.getId());
+    }
 }

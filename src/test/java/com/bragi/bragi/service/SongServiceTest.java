@@ -11,17 +11,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SongServiceTest {
@@ -259,4 +263,154 @@ class SongServiceTest {
                     .build());
         });
     }
+
+    @Test
+    void when_findAllSongs_success_thenReturns(){
+        when(dataAccessService.findAllSongs(any()))
+                .thenReturn(Page.empty());
+        var songs = songService.findAllSongs(1, 1, "desc");
+        assertTrue(songs.isEmpty());
+
+    }
+    @Test
+    void when_findAllArtists_invalidSort_thenThrows(){
+        assertThrows(RuntimeException.class, ()->{
+            songService.findAllSongs(1, 1, "invalid");
+        });
+    }
+
+    @Test
+    void when_findAllArtists_dataAccessFails_thenThrows(){
+        when(dataAccessService.findAllSongs(any()))
+                .thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, ()->{
+            songService.findAllSongs(1, 1, "desc");
+        });
+    }
+
+    @Test
+    void when_storeWithFile_success_thenReturns() throws IOException {
+        when(dataAccessService.getAlbumByExternalId(any())).thenReturn(Album.builder().build());
+        when(dataAccessService.getArtistByExternalId(any())).thenReturn(Artist.builder().build());
+        var songToAdd = com.bragi.bragi.rest.dto.Song.builder()
+                .dateReleased(java.sql.Timestamp.from(Instant.now()))
+                        .duration(1000L)
+                                .title("hello")
+                                        .album(UUID.randomUUID())
+                                                .artists(Set.of(UUID.randomUUID()))
+                                                        .build();
+        MultipartFile multipartFile = mock(MockMultipartFile.class);
+        when(multipartFile.getBytes()).thenReturn(new byte[]{1, 2, 3});
+        when(dataAccessService.saveSong(any())).thenReturn(Song.builder().id(1L).externalId(UUID.randomUUID()).build());
+
+        songService.store(songToAdd, multipartFile);
+
+    }
+
+    @Test
+    void when_storeWithFile_cantAccessFile_thenThrows() throws IOException {
+        lenient().when(dataAccessService.getAlbumByExternalId(any())).thenReturn(Album.builder().build());
+        lenient().when(dataAccessService.getArtistByExternalId(any())).thenReturn(Artist.builder().build());
+
+        MultipartFile multipartFile = mock(MockMultipartFile.class);
+        when(multipartFile.getBytes()).thenThrow(new IOException());
+
+
+        var songToAdd = com.bragi.bragi.rest.dto.Song.builder()
+                .dateReleased(java.sql.Timestamp.from(Instant.now()))
+                .duration(1000L)
+                .title("hello")
+                .album(UUID.randomUUID())
+                .artists(Set.of(UUID.randomUUID()))
+                .build();
+        lenient().when(dataAccessService.saveSong(any())).thenReturn(Song.builder().id(1L).externalId(UUID.randomUUID()).build());
+
+        assertThrows(RuntimeException.class, ()->{
+            songService.store(songToAdd, multipartFile);
+        });
+
+
+    }
+
+    @Test
+    void when_storeWithFile_cantGetArtists_thenThrows() throws IOException {
+        lenient().when(dataAccessService.getAlbumByExternalId(any())).thenReturn(Album.builder().build());
+        when(dataAccessService.getArtistByExternalId(any())).thenThrow(new RuntimeException());
+
+        MultipartFile multipartFile = mock(MockMultipartFile.class);
+        lenient().when(multipartFile.getBytes()).thenReturn(new byte[]{1, 2, 3});
+
+
+        var songToAdd = com.bragi.bragi.rest.dto.Song.builder()
+                .dateReleased(java.sql.Timestamp.from(Instant.now()))
+                .duration(1000L)
+                .title("hello")
+                .album(UUID.randomUUID())
+                .artists(Set.of(UUID.randomUUID()))
+                .build();
+        lenient().when(dataAccessService.saveSong(any())).thenReturn(Song.builder().id(1L).externalId(UUID.randomUUID()).build());
+
+        assertThrows(RuntimeException.class, ()->{
+            songService.store(songToAdd, multipartFile);
+        });
+
+
+    }
+
+    @Test
+    void when_storeWithFile_cantGetAlbum_thenThrows() throws IOException {
+        when(dataAccessService.getAlbumByExternalId(any())).thenThrow(new RuntimeException());
+        lenient().when(dataAccessService.getArtistByExternalId(any())).thenReturn(Artist.builder().build());
+
+        MultipartFile multipartFile = mock(MockMultipartFile.class);
+        when(multipartFile.getBytes()).thenReturn(new byte[]{1, 2, 3});
+
+
+        var songToAdd = com.bragi.bragi.rest.dto.Song.builder()
+                .dateReleased(java.sql.Timestamp.from(Instant.now()))
+                .duration(1000L)
+                .title("hello")
+                .album(UUID.randomUUID())
+                .artists(Set.of(UUID.randomUUID()))
+                .build();
+        lenient().when(dataAccessService.saveSong(any())).thenReturn(Song.builder().id(1L).externalId(UUID.randomUUID()).build());
+
+        assertThrows(RuntimeException.class, ()->{
+            songService.store(songToAdd, multipartFile);
+        });
+
+    }
+
+    @Test
+    void when_deleteSongById_success_thenReturns(){
+        when(dataAccessService.getSongByExternalId(any())).thenReturn(Song.builder().build());
+        assertDoesNotThrow(()->{
+            songService.deleteSong(UUID.randomUUID().toString());
+        });
+
+    }
+
+    @Test
+    void when_deleteSongId_fails_noArtist_thenThrows(){
+        when(dataAccessService.getSongByExternalId(any())).thenThrow(new NoSuchElementException());
+        assertThrows(RuntimeException.class, ()->{
+            songService.deleteSong(UUID.randomUUID().toString());
+        });
+    }
+
+    @Test
+    void when_deleteSongId_fails_failsToDelete_thenThrows(){
+        when(dataAccessService.getSongByExternalId(any())).thenReturn(Song.builder().build());
+        doThrow(new RuntimeException())
+                .when(dataAccessService)
+                .deleteSongById(anyLong());
+        assertThrows(RuntimeException.class, ()->{
+            songService.deleteSong(UUID.randomUUID().toString());
+        });
+    }
+
+
+
+
 }
