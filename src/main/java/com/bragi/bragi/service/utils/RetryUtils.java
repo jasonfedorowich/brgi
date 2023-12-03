@@ -12,6 +12,7 @@ import java.util.concurrent.Callable;
 @Slf4j
 public class RetryUtils {
 
+    //todo add error for nosuchelementexception
     public static <R> R getResultFromRetry(Callable<R> callable, String messageBefore, String messageDuring,
                                     int maxAttempts,
                                     long maxWaitBetween,

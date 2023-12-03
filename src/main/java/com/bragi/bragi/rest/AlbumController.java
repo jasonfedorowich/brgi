@@ -23,8 +23,6 @@ public class AlbumController {
     private final AlbumService albumService;
     private final ServiceMetrics serviceMetrics;
 
-    //todo add errors to controllers
-
     @GetMapping("/page")
     public Mono<List<Album>> getAlbums(@RequestParam("offset") int offset,
                                          @RequestParam("size") int size,
